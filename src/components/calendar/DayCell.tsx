@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { DayRecord, DayType } from '@/lib/types';
+import { DayRecord, DayType, MonthData } from '@/lib/types';
 import { DAY_TYPE_CONFIG, DAY_TYPE_CYCLE } from '@/lib/constants';
 import { formatNumber, formatDate } from '@/lib/format';
 import { HEBREW_DAY_FULL_NAMES } from '@/lib/constants';
+import { computeUpdatedDailyTarget } from '@/lib/calculator';
 
 interface DayCellProps {
   day: DayRecord;
+  month: MonthData;
   onDayTypeChange: (date: string, dayType: DayType) => void;
   onIncomeChange: (date: string, income: number) => void;
   onNoteChange: (date: string, note: string) => void;
 }
 
-export function DayCell({ day, onDayTypeChange, onIncomeChange, onNoteChange }: DayCellProps) {
+export function DayCell({ day, month, onDayTypeChange, onIncomeChange, onNoteChange }: DayCellProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const config = DAY_TYPE_CONFIG[day.dayType];
@@ -106,6 +108,7 @@ export function DayCell({ day, onDayTypeChange, onIncomeChange, onNoteChange }: 
       {dialogOpen && (
         <DayDialog
           day={day}
+          month={month}
           onClose={() => setDialogOpen(false)}
           onDayTypeChange={onDayTypeChange}
           onIncomeChange={onIncomeChange}
@@ -118,12 +121,14 @@ export function DayCell({ day, onDayTypeChange, onIncomeChange, onNoteChange }: 
 
 function DayDialog({
   day,
+  month,
   onClose,
   onDayTypeChange,
   onIncomeChange,
   onNoteChange,
 }: {
   day: DayRecord;
+  month: MonthData;
   onClose: () => void;
   onDayTypeChange: (date: string, dayType: DayType) => void;
   onIncomeChange: (date: string, income: number) => void;
@@ -209,6 +214,26 @@ function DayDialog({
               {day.dailyTarget > 0 ? `${formatNumber(day.dailyTarget)} ₪` : '—'}
             </div>
           </div>
+
+          {/* Updated daily target based on gap redistribution */}
+          {(() => {
+            const updated = computeUpdatedDailyTarget(month);
+            const hasIncome = month.days.some(d => d.actualIncome > 0);
+            if (!hasIncome || updated.updatedRegularTarget <= 0 || month.monthlyTarget <= 0) return null;
+            const updatedForThisDay = day.dayType === 'regular' ? updated.updatedRegularTarget
+              : day.dayType === 'half' ? updated.updatedHalfTarget : 0;
+            return (
+              <div className="bg-gold/[0.08] rounded-lg p-3 border border-gold/20">
+                <label className="block text-xs font-semibold text-gold-dark mb-1">יעד מעודכן (לפי פער)</label>
+                <div className="text-base font-bold text-gold-dark tabular-nums" dir="ltr">
+                  {updatedForThisDay > 0 ? `${formatNumber(updatedForThisDay)} ₪` : '—'}
+                </div>
+                <p className="text-[10px] text-warm-gray mt-1">
+                  פער נותר: {formatNumber(updated.remainingGap)} ₪ · {updated.remainingEffectiveDays} ימים נותרו
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Income input */}
           <div>

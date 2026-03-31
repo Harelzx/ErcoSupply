@@ -45,4 +45,5 @@ export const COLUMN_HEADERS = [
   '% עמידה חודשי',
   '% עמידה רבעוני',
   'הערות',
+  'יעד מעודכן',
 ] as const;

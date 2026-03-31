@@ -127,12 +127,17 @@ export function computeMonthMetrics(month: MonthData): MonthMetrics {
 
   const totalTarget = month.days.reduce((sum, day) => sum + day.dailyTarget, 0);
   const totalIncome = month.days.reduce((sum, day) => sum + day.actualIncome, 0);
+  const updated = computeUpdatedDailyTarget(month);
 
   return {
     effectiveDays,
     totalTarget,
     totalIncome,
     achievementPercent: month.monthlyTarget > 0 ? totalIncome / month.monthlyTarget : 0,
+    remainingGap: updated.remainingGap,
+    remainingEffectiveDays: updated.remainingEffectiveDays,
+    updatedRegularTarget: updated.updatedRegularTarget,
+    updatedHalfTarget: updated.updatedHalfTarget,
   };
 }
 
@@ -146,6 +151,56 @@ export function computeQuarterMetrics(months: [MonthData, MonthData, MonthData])
     totalIncome,
     achievementPercent: totalTarget > 0 ? totalIncome / totalTarget : 0,
     monthMetrics,
+  };
+}
+
+export interface UpdatedTarget {
+  remainingGap: number;
+  remainingEffectiveDays: number;
+  updatedRegularTarget: number;
+  updatedHalfTarget: number;
+}
+
+export function computeUpdatedDailyTarget(month: MonthData): UpdatedTarget {
+  // Find the last day with income entered to determine "remaining" days
+  let lastIncomeIndex = -1;
+  let totalIncomeToDate = 0;
+
+  for (let i = 0; i < month.days.length; i++) {
+    if (month.days[i].actualIncome > 0) {
+      lastIncomeIndex = i;
+    }
+    totalIncomeToDate += month.days[i].actualIncome;
+  }
+
+  const remainingGap = month.monthlyTarget - totalIncomeToDate;
+
+  // Count remaining effective days (after last day with income)
+  let remainingEffectiveDays = 0;
+  const startFrom = lastIncomeIndex + 1;
+  for (let i = startFrom; i < month.days.length; i++) {
+    const day = month.days[i];
+    if (day.dayType === 'regular') remainingEffectiveDays += 1;
+    else if (day.dayType === 'half') remainingEffectiveDays += 0.5;
+  }
+
+  if (remainingGap <= 0 || remainingEffectiveDays === 0) {
+    return {
+      remainingGap,
+      remainingEffectiveDays,
+      updatedRegularTarget: 0,
+      updatedHalfTarget: 0,
+    };
+  }
+
+  const updatedRegularTarget = Math.round((remainingGap / remainingEffectiveDays) * 100) / 100;
+  const updatedHalfTarget = Math.round((updatedRegularTarget / 2) * 100) / 100;
+
+  return {
+    remainingGap,
+    remainingEffectiveDays,
+    updatedRegularTarget,
+    updatedHalfTarget,
   };
 }
 

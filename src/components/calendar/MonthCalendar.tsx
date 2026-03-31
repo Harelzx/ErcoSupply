@@ -49,6 +49,7 @@ export function MonthCalendar({ month, onDayTypeChange, onIncomeChange, onNoteCh
           <DayCell
             key={day.date}
             day={day}
+            month={month}
             onDayTypeChange={onDayTypeChange}
             onIncomeChange={onIncomeChange}
             onNoteChange={onNoteChange}

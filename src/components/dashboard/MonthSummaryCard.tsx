@@ -56,6 +56,20 @@ export function MonthSummaryCard({ month, metrics }: MonthSummaryCardProps) {
               : '—'}
           </span>
         </div>
+        {hasTarget && metrics.totalIncome > 0 && metrics.updatedRegularTarget > 0 && (
+          <>
+            <div className="h-px bg-gold/30" />
+            <div className="flex justify-between items-baseline">
+              <span className="text-xs text-gold-dark font-medium">יעד יומי מעודכן</span>
+              <span className="text-sm font-bold tabular-nums text-gold-dark" dir="ltr">
+                {formatCurrencyCompact(metrics.updatedRegularTarget)}
+              </span>
+            </div>
+            <p className="text-[10px] text-warm-gray">
+              {metrics.remainingEffectiveDays} ימים נותרו
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

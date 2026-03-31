@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { QuarterState } from './types';
 import { COLUMN_HEADERS, HEBREW_DAY_NAMES, DAY_TYPE_CONFIG, QUARTER_LABELS } from './constants';
-import { computeCumulativeRow } from './calculator';
+import { computeCumulativeRow, computeUpdatedDailyTarget } from './calculator';
 import { formatDate } from './format';
 
 export async function generateExcelWorkbook(state: QuarterState) {
@@ -28,6 +28,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
     { width: 12 }, // % עמידה חודשי
     { width: 14 }, // % עמידה רבעוני
     { width: 20 }, // הערות
+    { width: 14 }, // יעד מעודכן
   ];
 
   // Header row
@@ -50,7 +51,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
     if (mi > 0) {
       const sepRow = worksheet.addRow([`── ${month.hebrewName} ${month.year} ──`]);
       sepRow.font = { bold: true, size: 10, color: { argb: 'FF8B7E6F' } };
-      worksheet.mergeCells(sepRow.number, 1, sepRow.number, 11);
+      worksheet.mergeCells(sepRow.number, 1, sepRow.number, 12);
       sepRow.alignment = { horizontal: 'center' };
       sepRow.fill = {
         type: 'pattern',
@@ -59,9 +60,13 @@ export async function generateExcelWorkbook(state: QuarterState) {
       };
     }
 
+    const updatedTarget = computeUpdatedDailyTarget(month);
+
     for (let di = 0; di < month.days.length; di++) {
       const day = month.days[di];
       const cum = computeCumulativeRow(month, di, state.months, mi);
+      const dayUpdatedTarget = day.dayType === 'regular' ? updatedTarget.updatedRegularTarget
+        : day.dayType === 'half' ? updatedTarget.updatedHalfTarget : 0;
 
       const row = worksheet.addRow([
         formatDate(day.date),
@@ -75,6 +80,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
         cum.monthlyAchievement,
         cum.quarterlyAchievement,
         day.note || '',
+        dayUpdatedTarget || '',
       ]);
 
       // Number formatting
@@ -118,7 +124,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
   worksheet.addRow([]);
   const summaryHeader = worksheet.addRow(['סיכום רבעוני']);
   summaryHeader.font = { bold: true, size: 12, color: { argb: 'FF1B4D4A' } };
-  worksheet.mergeCells(summaryHeader.number, 1, summaryHeader.number, 11);
+  worksheet.mergeCells(summaryHeader.number, 1, summaryHeader.number, 12);
 
   for (let mi = 0; mi < 3; mi++) {
     const month = state.months[mi];
@@ -142,7 +148,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
   // Auto-filter on header
   worksheet.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: 1, column: 11 },
+    to: { row: 1, column: 12 },
   };
 
   // Generate and download
