@@ -1,8 +1,8 @@
 'use client';
 
-import { useQuarterData } from '@/hooks/useQuarterData';
 import { QuarterPicker } from '@/components/setup/QuarterPicker';
 import { ExportButton } from '@/components/export/ExportButton';
+import { UserMenu } from './UserMenu';
 
 export function Header() {
   return (
@@ -27,7 +27,11 @@ export function Header() {
               <QuarterPicker />
             </div>
           </div>
-          <ExportButton />
+          <div className="flex items-center gap-2">
+            <ExportButton />
+            <div className="h-6 w-px bg-teal-light/20" />
+            <UserMenu />
+          </div>
         </div>
         <div className="sm:hidden pb-3">
           <QuarterPicker />
