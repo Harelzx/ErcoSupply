@@ -11,9 +11,17 @@ interface QuarterSummaryProps {
   year: number;
 }
 
+function quarterPaceColorClasses(percent: number): { dot: string; text: string } {
+  if (percent >= 1) return { dot: 'bg-gold', text: 'text-gold' };
+  if (percent >= 0.8) return { dot: 'bg-gold-light', text: 'text-gold-light' };
+  return { dot: 'bg-terracotta-light', text: 'text-terracotta-light' };
+}
+
 export function QuarterSummary({ metrics, quarter, year }: QuarterSummaryProps) {
   const hasTarget = metrics.totalTarget > 0;
   const gap = metrics.totalIncome - metrics.totalTarget;
+  const showPace = hasTarget && metrics.targetToDate > 0;
+  const paceColors = showPace ? quarterPaceColorClasses(metrics.paceAchievementPercent) : null;
 
   return (
     <div className="bg-teal rounded-2xl shadow-warm-lg p-5 text-cream">
@@ -65,6 +73,23 @@ export function QuarterSummary({ metrics, quarter, year }: QuarterSummaryProps) 
           </p>
         </div>
       </div>
+
+      {showPace && paceColors && (
+        <div className="mt-4 pt-4 border-t border-cream/20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className={`w-2.5 h-2.5 rounded-full ${paceColors.dot}`} aria-hidden="true" />
+            <div>
+              <p className="text-sm text-gold-light font-semibold">עמידה עד כה</p>
+              <p className="text-xs text-cream/70 tabular-nums" dir="ltr">
+                {formatCurrency(metrics.incomeToDate)} / {formatCurrency(metrics.targetToDate)}
+              </p>
+            </div>
+          </div>
+          <span className={`text-3xl font-extrabold tabular-nums ${paceColors.text}`} dir="ltr">
+            {Math.round(metrics.paceAchievementPercent * 100)}%
+          </span>
+        </div>
+      )}
     </div>
   );
 }

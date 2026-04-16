@@ -3,6 +3,7 @@
 import { createContext, useContext, useReducer, useCallback, ReactNode, useMemo, useEffect, useRef, useState } from 'react';
 import { QuarterState, QuarterAction, DayType, MonthData } from '@/lib/types';
 import { generateQuarterData, calculateDailyTargets, computeQuarterMetrics } from '@/lib/calculator';
+import { getTodayISO } from '@/lib/date';
 import { loadQuarterData, saveQuarterConfig, saveDayOverride } from '@/lib/supabase/data';
 
 function getCurrentQuarter(): { quarter: 1 | 2 | 3 | 4; year: number } {
@@ -112,7 +113,8 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
 
-  const metrics = useMemo(() => computeQuarterMetrics(state.months), [state.months]);
+  const today = useMemo(() => getTodayISO(), []);
+  const metrics = useMemo(() => computeQuarterMetrics(state.months, today), [state.months, today]);
 
   // Load data from Supabase on mount and quarter change
   useEffect(() => {

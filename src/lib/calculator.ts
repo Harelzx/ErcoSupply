@@ -1,6 +1,28 @@
 import { DayRecord, DayType, MonthData, MonthMetrics, QuarterMetrics } from './types';
 import { HEBREW_DAY_NAMES, HEBREW_MONTH_NAMES, QUARTER_MONTHS } from './constants';
 import { getIsraeliHolidays } from './holidays';
+import { getTodayISO } from './date';
+
+export interface MonthPace {
+  targetToDate: number;
+  incomeToDate: number;
+  paceAchievementPercent: number;
+}
+
+export function computeMonthPace(month: MonthData, today: string): MonthPace {
+  let targetToDate = 0;
+  let incomeToDate = 0;
+  for (const day of month.days) {
+    if (day.date > today) break;
+    targetToDate += day.dailyTarget;
+    incomeToDate += day.actualIncome;
+  }
+  return {
+    targetToDate,
+    incomeToDate,
+    paceAchievementPercent: targetToDate > 0 ? incomeToDate / targetToDate : 0,
+  };
+}
 
 function getDefaultDayType(dayOfWeek: number): DayType {
   if (dayOfWeek === 6) return 'closed'; // Saturday
@@ -118,7 +140,7 @@ export function generateQuarterData(
   }) as [MonthData, MonthData, MonthData];
 }
 
-export function computeMonthMetrics(month: MonthData): MonthMetrics {
+export function computeMonthMetrics(month: MonthData, today: string = getTodayISO()): MonthMetrics {
   const effectiveDays = month.days.reduce((sum, day) => {
     if (day.dayType === 'regular') return sum + 1;
     if (day.dayType === 'half') return sum + 0.5;
@@ -128,6 +150,7 @@ export function computeMonthMetrics(month: MonthData): MonthMetrics {
   const totalTarget = month.days.reduce((sum, day) => sum + day.dailyTarget, 0);
   const totalIncome = month.days.reduce((sum, day) => sum + day.actualIncome, 0);
   const updated = computeUpdatedDailyTarget(month);
+  const pace = computeMonthPace(month, today);
 
   return {
     effectiveDays,
@@ -138,18 +161,29 @@ export function computeMonthMetrics(month: MonthData): MonthMetrics {
     remainingEffectiveDays: updated.remainingEffectiveDays,
     updatedRegularTarget: updated.updatedRegularTarget,
     updatedHalfTarget: updated.updatedHalfTarget,
+    targetToDate: pace.targetToDate,
+    incomeToDate: pace.incomeToDate,
+    paceAchievementPercent: pace.paceAchievementPercent,
   };
 }
 
-export function computeQuarterMetrics(months: [MonthData, MonthData, MonthData]): QuarterMetrics {
-  const monthMetrics = months.map(computeMonthMetrics);
+export function computeQuarterMetrics(
+  months: [MonthData, MonthData, MonthData],
+  today: string = getTodayISO(),
+): QuarterMetrics {
+  const monthMetrics = months.map((m) => computeMonthMetrics(m, today));
   const totalTarget = months.reduce((sum, m) => sum + m.monthlyTarget, 0);
   const totalIncome = monthMetrics.reduce((sum, m) => sum + m.totalIncome, 0);
+  const targetToDate = monthMetrics.reduce((sum, m) => sum + m.targetToDate, 0);
+  const incomeToDate = monthMetrics.reduce((sum, m) => sum + m.incomeToDate, 0);
 
   return {
     totalTarget,
     totalIncome,
     achievementPercent: totalTarget > 0 ? totalIncome / totalTarget : 0,
+    targetToDate,
+    incomeToDate,
+    paceAchievementPercent: targetToDate > 0 ? incomeToDate / targetToDate : 0,
     monthMetrics,
   };
 }

@@ -34,12 +34,18 @@ export interface MonthMetrics {
   remainingEffectiveDays: number;
   updatedRegularTarget: number;
   updatedHalfTarget: number;
+  targetToDate: number;
+  incomeToDate: number;
+  paceAchievementPercent: number;
 }
 
 export interface QuarterMetrics {
   totalTarget: number;
   totalIncome: number;
   achievementPercent: number;
+  targetToDate: number;
+  incomeToDate: number;
+  paceAchievementPercent: number;
   monthMetrics: MonthMetrics[];
 }
 

@@ -9,8 +9,16 @@ interface MonthSummaryCardProps {
   metrics: MonthMetrics;
 }
 
+function paceColorClasses(percent: number): { dot: string; text: string } {
+  if (percent >= 1) return { dot: 'bg-teal', text: 'text-teal' };
+  if (percent >= 0.8) return { dot: 'bg-gold-dark', text: 'text-gold-dark' };
+  return { dot: 'bg-terracotta', text: 'text-terracotta' };
+}
+
 export function MonthSummaryCard({ month, metrics }: MonthSummaryCardProps) {
   const hasTarget = month.monthlyTarget > 0;
+  const showPace = hasTarget && metrics.targetToDate > 0;
+  const paceColors = showPace ? paceColorClasses(metrics.paceAchievementPercent) : null;
 
   return (
     <div className="bg-white rounded-2xl shadow-warm border border-sand-dark/30 p-5 transition-all hover:shadow-warm-md">
@@ -56,6 +64,26 @@ export function MonthSummaryCard({ month, metrics }: MonthSummaryCardProps) {
               : '—'}
           </span>
         </div>
+        {showPace && paceColors && (
+          <>
+            <div className="h-px bg-sand-dark/40" />
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-teal flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${paceColors.dot}`} aria-hidden="true" />
+                עמידה עד כה
+              </span>
+              <span className={`text-sm font-extrabold tabular-nums ${paceColors.text}`} dir="ltr">
+                {Math.round(metrics.paceAchievementPercent * 100)}%
+              </span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] text-warm-gray">יעד עד כה</span>
+              <span className="text-[10px] tabular-nums text-warm-gray" dir="ltr">
+                {formatCurrencyCompact(metrics.incomeToDate)} / {formatCurrencyCompact(metrics.targetToDate)}
+              </span>
+            </div>
+          </>
+        )}
         {hasTarget && metrics.totalIncome > 0 && metrics.updatedRegularTarget > 0 && (
           <>
             <div className="h-px bg-gold/30" />
