@@ -149,7 +149,7 @@ export function computeMonthMetrics(month: MonthData, today: string = getTodayIS
 
   const totalTarget = month.days.reduce((sum, day) => sum + day.dailyTarget, 0);
   const totalIncome = month.days.reduce((sum, day) => sum + day.actualIncome, 0);
-  const updated = computeUpdatedDailyTarget(month);
+  const updated = computeUpdatedDailyTarget(month, today);
   const pace = computeMonthPace(month, today);
 
   return {
@@ -195,28 +195,24 @@ export interface UpdatedTarget {
   updatedHalfTarget: number;
 }
 
-export function computeUpdatedDailyTarget(month: MonthData): UpdatedTarget {
-  // Find the last day with income entered to determine "remaining" days
-  let lastIncomeIndex = -1;
-  let totalIncomeToDate = 0;
-
-  for (let i = 0; i < month.days.length; i++) {
-    if (month.days[i].actualIncome > 0) {
-      lastIncomeIndex = i;
-    }
-    totalIncomeToDate += month.days[i].actualIncome;
-  }
-
-  const remainingGap = month.monthlyTarget - totalIncomeToDate;
-
-  // Count remaining effective days (after last day with income)
+export function computeUpdatedDailyTarget(month: MonthData, today: string = getTodayISO()): UpdatedTarget {
+  // Remaining days = effective days strictly after `today`. Today's target is
+  // part of `targetToDate` (pace), so it must NOT also count as remaining —
+  // otherwise a day with no income entered gets double-counted (once against
+  // pace, once as future days to spread the gap over) and the updated target
+  // comes out artificially low.
+  let totalIncome = 0;
   let remainingEffectiveDays = 0;
-  const startFrom = lastIncomeIndex + 1;
-  for (let i = startFrom; i < month.days.length; i++) {
-    const day = month.days[i];
-    if (day.dayType === 'regular') remainingEffectiveDays += 1;
-    else if (day.dayType === 'half') remainingEffectiveDays += 0.5;
+
+  for (const day of month.days) {
+    totalIncome += day.actualIncome;
+    if (day.date > today) {
+      if (day.dayType === 'regular') remainingEffectiveDays += 1;
+      else if (day.dayType === 'half') remainingEffectiveDays += 0.5;
+    }
   }
+
+  const remainingGap = month.monthlyTarget - totalIncome;
 
   if (remainingGap <= 0 || remainingEffectiveDays === 0) {
     return {

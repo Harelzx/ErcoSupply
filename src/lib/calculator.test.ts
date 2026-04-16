@@ -3,6 +3,7 @@ import {
   computeMonthPace,
   computeMonthMetrics,
   computeQuarterMetrics,
+  computeUpdatedDailyTarget,
 } from './calculator';
 import { DayRecord, DayType, MonthData } from './types';
 
@@ -193,5 +194,93 @@ describe('computeQuarterMetrics with today', () => {
     const q = computeQuarterMetrics([m1, m2, m3], '2026-04-16');
     expect(q.targetToDate).toBe(0);
     expect(q.paceAchievementPercent).toBe(0);
+  });
+});
+
+describe('computeUpdatedDailyTarget', () => {
+  it('spreads the gap across days strictly after today, not after last income entry', () => {
+    // 10 effective days, target 1000, daily 100. Income for days 1..5 = 80 each
+    // (behind pace). Today = day 5. Remaining = days 6..10 = 5 days.
+    // Gap = 1000 - 400 = 600. Updated = 600 / 5 = 120 (higher than 100) ✓
+    const incomes = Array.from({ length: 10 }, (_, i) => (i < 5 ? 80 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    // trim to 10 days for cleanliness
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-04-05');
+    expect(result.remainingGap).toBe(600);
+    expect(result.remainingEffectiveDays).toBe(5);
+    expect(result.updatedRegularTarget).toBe(120);
+  });
+
+  it('does NOT use last-income-index: gaps in income entries still count as elapsed', () => {
+    // The old behavior found the last day with income > 0 and treated every
+    // day after it as "remaining". That over-counted remaining days when the
+    // user skipped entering income for recent days.
+    // 10 days, daily 100, income only on day 1 = 80. Today = day 5.
+    // Old logic: remaining = days 2..10 = 9 days → updated = 920/9 ≈ 102
+    // New logic: remaining = days 6..10 = 5 days → updated = 920/5 = 184
+    const incomes = Array.from({ length: 10 }, (_, i) => (i === 0 ? 80 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-04-05');
+    expect(result.remainingEffectiveDays).toBe(5);
+    expect(result.updatedRegularTarget).toBe(184);
+  });
+
+  it('updated target equals original when on pace (gap matches what remaining days need)', () => {
+    // 10 days, daily 100, on-pace income of 100 per day for days 1..5.
+    // Gap = 500, remaining = 5 days, updated = 100. Same as original ✓
+    const incomes = Array.from({ length: 10 }, (_, i) => (i < 5 ? 100 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-04-05');
+    expect(result.updatedRegularTarget).toBe(100);
+  });
+
+  it('updated target is lower than original when ahead of pace', () => {
+    // 10 days, daily 100. Income 150 per day for days 1..5 (ahead).
+    // Gap = 250, remaining = 5 days, updated = 50 < 100 ✓
+    const incomes = Array.from({ length: 10 }, (_, i) => (i < 5 ? 150 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-04-05');
+    expect(result.updatedRegularTarget).toBe(50);
+  });
+
+  it('returns zeros when gap is already met', () => {
+    const incomes = Array.from({ length: 10 }, (_, i) => (i < 5 ? 250 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-04-05');
+    expect(result.remainingGap).toBeLessThanOrEqual(0);
+    expect(result.updatedRegularTarget).toBe(0);
+    expect(result.updatedHalfTarget).toBe(0);
+  });
+
+  it('returns zeros when no days remain (today is past month end)', () => {
+    const incomes = Array.from({ length: 10 }, (_, i) => (i < 5 ? 80 : 0));
+    const month = makeRegularMonth(2026, 4, 1000, 100, incomes);
+    month.days = month.days.slice(0, 10);
+    const result = computeUpdatedDailyTarget(month, '2026-12-31');
+    expect(result.remainingEffectiveDays).toBe(0);
+    expect(result.updatedRegularTarget).toBe(0);
+  });
+
+  it('handles half days at half target', () => {
+    const days: DayRecord[] = [
+      makeDay('2026-04-01', 'regular', 100, 80),
+      makeDay('2026-04-02', 'regular', 100, 80),
+      makeDay('2026-04-03', 'half', 50, 0),
+      makeDay('2026-04-04', 'regular', 100, 0),
+    ];
+    const month: MonthData = {
+      year: 2026, month: 4, hebrewName: 'test', monthlyTarget: 350, days,
+    };
+    // Today = day 2. Remaining = day 3 (half) + day 4 (regular) = 1.5 effective
+    // Gap = 350 - 160 = 190. Updated = 190 / 1.5 ≈ 126.67
+    const result = computeUpdatedDailyTarget(month, '2026-04-02');
+    expect(result.remainingEffectiveDays).toBe(1.5);
+    expect(result.updatedRegularTarget).toBeCloseTo(126.67, 1);
+    expect(result.updatedHalfTarget).toBeCloseTo(63.34, 1);
   });
 });
