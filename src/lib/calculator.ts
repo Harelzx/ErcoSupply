@@ -1,7 +1,7 @@
 import { DayRecord, DayType, MonthData, MonthMetrics, QuarterMetrics } from './types';
 import { HEBREW_DAY_NAMES, HEBREW_MONTH_NAMES, QUARTER_MONTHS } from './constants';
 import { getIsraeliHolidays } from './holidays';
-import { getTodayISO } from './date';
+import { getReferenceDateISO } from './date';
 
 export interface MonthPace {
   targetToDate: number;
@@ -140,7 +140,7 @@ export function generateQuarterData(
   }) as [MonthData, MonthData, MonthData];
 }
 
-export function computeMonthMetrics(month: MonthData, today: string = getTodayISO()): MonthMetrics {
+export function computeMonthMetrics(month: MonthData, today: string = getReferenceDateISO()): MonthMetrics {
   const effectiveDays = month.days.reduce((sum, day) => {
     if (day.dayType === 'regular') return sum + 1;
     if (day.dayType === 'half') return sum + 0.5;
@@ -169,7 +169,7 @@ export function computeMonthMetrics(month: MonthData, today: string = getTodayIS
 
 export function computeQuarterMetrics(
   months: [MonthData, MonthData, MonthData],
-  today: string = getTodayISO(),
+  today: string = getReferenceDateISO(),
 ): QuarterMetrics {
   const monthMetrics = months.map((m) => computeMonthMetrics(m, today));
   const totalTarget = months.reduce((sum, m) => sum + m.monthlyTarget, 0);
@@ -195,7 +195,7 @@ export interface UpdatedTarget {
   updatedHalfTarget: number;
 }
 
-export function computeUpdatedDailyTarget(month: MonthData, today: string = getTodayISO()): UpdatedTarget {
+export function computeUpdatedDailyTarget(month: MonthData, today: string = getReferenceDateISO()): UpdatedTarget {
   // Remaining days = effective days strictly after `today`. Today's target is
   // part of `targetToDate` (pace), so it must NOT also count as remaining —
   // otherwise a day with no income entered gets double-counted (once against

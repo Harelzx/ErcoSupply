@@ -6,7 +6,7 @@ import { DAY_TYPE_CONFIG, DAY_TYPE_CYCLE } from '@/lib/constants';
 import { formatNumber, formatDate } from '@/lib/format';
 import { HEBREW_DAY_FULL_NAMES } from '@/lib/constants';
 import { computeUpdatedDailyTarget } from '@/lib/calculator';
-import { getTodayISO } from '@/lib/date';
+import { getReferenceDateISO } from '@/lib/date';
 
 interface DayCellProps {
   day: DayRecord;
@@ -218,7 +218,7 @@ function DayDialog({
 
           {/* Updated daily target based on gap redistribution */}
           {(() => {
-            const updated = computeUpdatedDailyTarget(month, getTodayISO());
+            const updated = computeUpdatedDailyTarget(month, getReferenceDateISO());
             const hasIncome = month.days.some(d => d.actualIncome > 0);
             if (!hasIncome || updated.updatedRegularTarget <= 0 || month.monthlyTarget <= 0) return null;
             const updatedForThisDay = day.dayType === 'regular' ? updated.updatedRegularTarget

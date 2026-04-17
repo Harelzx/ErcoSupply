@@ -3,7 +3,7 @@ import { saveAs } from 'file-saver';
 import { QuarterState } from './types';
 import { COLUMN_HEADERS, HEBREW_DAY_NAMES, DAY_TYPE_CONFIG, QUARTER_LABELS } from './constants';
 import { computeCumulativeRow, computeUpdatedDailyTarget } from './calculator';
-import { getTodayISO } from './date';
+import { getReferenceDateISO } from './date';
 import { formatDate } from './format';
 
 export async function generateExcelWorkbook(state: QuarterState) {
@@ -61,7 +61,7 @@ export async function generateExcelWorkbook(state: QuarterState) {
       };
     }
 
-    const updatedTarget = computeUpdatedDailyTarget(month, getTodayISO());
+    const updatedTarget = computeUpdatedDailyTarget(month, getReferenceDateISO());
 
     for (let di = 0; di < month.days.length; di++) {
       const day = month.days[di];
