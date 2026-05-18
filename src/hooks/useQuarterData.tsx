@@ -4,7 +4,29 @@ import { createContext, useContext, useReducer, useCallback, ReactNode, useMemo,
 import { QuarterState, QuarterAction, DayType, MonthData } from '@/lib/types';
 import { generateQuarterData, calculateDailyTargets, computeQuarterMetrics } from '@/lib/calculator';
 import { getReferenceDateISO } from '@/lib/date';
-import { loadQuarterData, saveQuarterConfig, saveDayOverride } from '@/lib/supabase/data';
+import { loadQuarterData, saveQuarterConfig, saveDayOverrides } from '@/lib/supabase/data';
+
+export interface SaveErrorInfo {
+  type: string;
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
+function describeError(err: unknown): SaveErrorInfo {
+  if (err && typeof err === 'object') {
+    const e = err as { name?: string; message?: string; code?: string; details?: string; hint?: string };
+    return {
+      type: e.code ? `PostgrestError (${e.code})` : (e.name || 'Error'),
+      message: e.message || String(err),
+      code: e.code,
+      details: e.details,
+      hint: e.hint,
+    };
+  }
+  return { type: 'Error', message: String(err) };
+}
 
 function getCurrentQuarter(): { quarter: 1 | 2 | 3 | 4; year: number } {
   const now = new Date();
@@ -96,6 +118,7 @@ interface QuarterContextValue {
   metrics: ReturnType<typeof computeQuarterMetrics>;
   loading: boolean;
   saving: boolean;
+  saveError: SaveErrorInfo | null;
   setQuarter: (quarter: 1 | 2 | 3 | 4, year: number) => void;
   setMonthlyTarget: (monthIndex: number, target: number) => void;
   setDayType: (date: string, dayType: DayType) => void;
@@ -109,8 +132,10 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(quarterReducer, undefined, createInitialState);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<SaveErrorInfo | null>(null);
   const configIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveGenerationRef = useRef(0);
   const isInitialLoad = useRef(true);
 
   const today = useMemo(() => getReferenceDateISO(), []);
@@ -190,6 +215,9 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
+      const generation = ++saveGenerationRef.current;
+      const isStale = () => saveGenerationRef.current !== generation;
+
       setSaving(true);
       try {
         const targets: [number, number, number] = [
@@ -199,22 +227,23 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
         ];
 
         const id = await saveQuarterConfig(state.config.year, state.config.quarter, targets);
+        if (isStale()) return;
+
         if (id) {
           configIdRef.current = id;
-
-          // Save all modified day overrides
-          for (const month of state.months) {
-            for (const day of month.days) {
-              if (day.actualIncome > 0 || day.note) {
-                await saveDayOverride(id, day.date, day.dayType, day.actualIncome, day.note);
-              }
-            }
-          }
+          const allDays = state.months.flatMap(m => m.days);
+          await saveDayOverrides(id, allDays);
+          if (isStale()) return;
         }
+
+        setSaveError(null);
       } catch (err) {
-        console.error('Failed to save:', err);
+        if (isStale()) return;
+        const info = describeError(err);
+        console.error(`Save failed [${info.type}]:`, info);
+        setSaveError(info);
       } finally {
-        setSaving(false);
+        if (!isStale()) setSaving(false);
       }
     }, 1500);
 
@@ -251,12 +280,13 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
     metrics,
     loading,
     saving,
+    saveError,
     setQuarter,
     setMonthlyTarget,
     setDayType,
     setActualIncome,
     setNote,
-  }), [state, metrics, loading, saving, setQuarter, setMonthlyTarget, setDayType, setActualIncome, setNote]);
+  }), [state, metrics, loading, saving, saveError, setQuarter, setMonthlyTarget, setDayType, setActualIncome, setNote]);
 
   return (
     <QuarterContext.Provider value={value}>
