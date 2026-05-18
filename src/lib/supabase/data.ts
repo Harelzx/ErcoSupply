@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import { QuarterState, DayRecord, MonthData } from '../types';
+import { DayRecord } from '../types';
 
 const supabase = () => createClient();
 
@@ -52,7 +52,7 @@ export async function saveQuarterConfig(
 ): Promise<string | null> {
   const sb = supabase();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) return null;
+  if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await sb.from('quarter_configs')
     .upsert({
@@ -69,32 +69,8 @@ export async function saveQuarterConfig(
     .select('id')
     .single();
 
+  if (error) throw error;
   return data?.id || null;
-}
-
-export async function saveDayOverride(
-  configId: string,
-  date: string,
-  dayType: string,
-  actualIncome: number,
-  note: string
-): Promise<void> {
-  const sb = supabase();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !configId) return;
-
-  await sb.from('day_overrides')
-    .upsert({
-      user_id: user.id,
-      quarter_config_id: configId,
-      date,
-      day_type: dayType,
-      actual_income: actualIncome,
-      note,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'quarter_config_id,date',
-    });
 }
 
 export async function saveDayOverrides(
@@ -103,11 +79,10 @@ export async function saveDayOverrides(
 ): Promise<void> {
   const sb = supabase();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user || !configId) return;
+  if (!user) throw new Error('Not authenticated');
+  if (!configId) throw new Error('Missing quarter config id');
 
-  // Only save days that have been modified (have income, changed type from default, or have notes)
   const modifiedDays = days.filter(d => d.actualIncome > 0 || d.note);
-
   if (modifiedDays.length === 0) return;
 
   const rows = modifiedDays.map(d => ({
@@ -120,6 +95,8 @@ export async function saveDayOverrides(
     updated_at: new Date().toISOString(),
   }));
 
-  await sb.from('day_overrides')
+  const { error } = await sb.from('day_overrides')
     .upsert(rows, { onConflict: 'quarter_config_id,date' });
+
+  if (error) throw error;
 }

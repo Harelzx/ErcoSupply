@@ -3,6 +3,7 @@
 import { QuarterPicker } from '@/components/setup/QuarterPicker';
 import { ExportButton } from '@/components/export/ExportButton';
 import { UserMenu } from './UserMenu';
+import { SaveStatus } from './SaveStatus';
 
 export function Header() {
   return (
@@ -28,6 +29,7 @@ export function Header() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <SaveStatus />
             <ExportButton />
             <div className="h-6 w-px bg-teal-light/20" />
             <UserMenu />
