@@ -3,9 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useQuarterData } from '@/hooks/useQuarterData';
 import { formatCurrency } from '@/lib/format';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function MonthlyTargets() {
-  const { state, setMonthlyTarget } = useQuarterData();
+  const { state, setMonthlyTarget, loading } = useQuarterData();
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="bg-white rounded-xl p-4 shadow-warm border border-sand-dark/50">
+            <Skeleton className="h-3 w-16 mb-2" />
+            <Skeleton className="h-11 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

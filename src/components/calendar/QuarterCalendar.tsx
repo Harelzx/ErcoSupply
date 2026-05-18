@@ -1,10 +1,18 @@
 'use client';
 
 import { useQuarterData } from '@/hooks/useQuarterData';
-import { MonthCalendar } from './MonthCalendar';
+import { MonthCalendar, MonthCalendarSkeleton } from './MonthCalendar';
 
 export function QuarterCalendar() {
-  const { state, setDayType, setActualIncome, setNote } = useQuarterData();
+  const { state, setDayType, setActualIncome, setNote, loading } = useQuarterData();
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {[0, 1, 2].map(i => <MonthCalendarSkeleton key={i} />)}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

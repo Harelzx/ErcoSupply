@@ -3,6 +3,7 @@
 import { MonthData, MonthMetrics } from '@/lib/types';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/format';
 import { ProgressRing } from './ProgressRing';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MonthSummaryCardProps {
   month: MonthData;
@@ -98,6 +99,31 @@ export function MonthSummaryCard({ month, metrics }: MonthSummaryCardProps) {
             </p>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+export function MonthSummaryCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl shadow-warm border border-sand-dark/30 p-5">
+      <div className="flex items-start justify-between mb-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+        <Skeleton className="h-16 w-16 rounded-full" />
+      </div>
+      <div className="space-y-2.5">
+        {[0, 1, 2].map(i => (
+          <div key={i}>
+            <div className="flex justify-between items-baseline">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            {i < 2 && <div className="h-px bg-sand-dark/20 mt-2.5" />}
+          </div>
+        ))}
       </div>
     </div>
   );

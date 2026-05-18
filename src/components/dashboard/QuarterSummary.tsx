@@ -4,6 +4,7 @@ import { QuarterMetrics } from '@/lib/types';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/format';
 import { ProgressRing } from './ProgressRing';
 import { QUARTER_LABELS } from '@/lib/constants';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface QuarterSummaryProps {
   metrics: QuarterMetrics;
@@ -91,6 +92,41 @@ export function QuarterSummary({ metrics, quarter, year }: QuarterSummaryProps) 
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+export function QuarterSummarySkeleton() {
+  return (
+    <div className="bg-teal rounded-2xl shadow-warm-lg p-5">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-8 rounded-full bg-cream/15" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28 bg-cream/15" />
+            <Skeleton className="h-3 w-36 bg-cream/10" />
+          </div>
+        </div>
+        <Skeleton className="h-[90px] w-[90px] rounded-full bg-cream/15" />
+      </div>
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 border-t border-cream/20 pt-5">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="text-center min-w-0 space-y-2">
+            <Skeleton className="h-3 w-20 mx-auto bg-cream/10" />
+            <Skeleton className="h-7 w-24 mx-auto bg-cream/15" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 pt-4 border-t border-cream/20 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-2.5 w-2.5 rounded-full bg-cream/20" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-20 bg-cream/15" />
+            <Skeleton className="h-2.5 w-28 bg-cream/10" />
+          </div>
+        </div>
+        <Skeleton className="h-8 w-16 bg-cream/15" />
+      </div>
     </div>
   );
 }
