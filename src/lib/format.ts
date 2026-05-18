@@ -8,11 +8,16 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatCurrencyCompact(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M ₪`;
+  // Use a non-breaking space between the number and ₪ so the symbol
+  // never wraps onto its own line in narrow grid cells.
+  const NBSP = ' ';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    return `${sign}${(abs / 1_000_000).toFixed(2)}M${NBSP}₪`;
   }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(0)}K ₪`;
+  if (abs >= 1_000) {
+    return `${sign}${Math.round(abs / 1_000)}K${NBSP}₪`;
   }
   return formatCurrency(value);
 }

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { DayRecord, DayType, MonthData } from '@/lib/types';
 import { DAY_TYPE_CONFIG, DAY_TYPE_CYCLE } from '@/lib/constants';
-import { formatNumber, formatDate } from '@/lib/format';
+import { formatNumber, formatDate, formatCurrencyCompact } from '@/lib/format';
 import { HEBREW_DAY_FULL_NAMES } from '@/lib/constants';
 import { computeUpdatedDailyTarget } from '@/lib/calculator';
 import { getReferenceDateISO } from '@/lib/date';
@@ -66,8 +66,8 @@ export function DayCell({ day, month, onDayTypeChange, onIncomeChange, onNoteCha
 
         {/* Daily target */}
         {day.dailyTarget > 0 && (
-          <div className="text-[10px] text-warm-gray tabular-nums mb-1 w-full">
-            יעד: {formatNumber(day.dailyTarget)}
+          <div className="text-[10px] text-warm-gray tabular-nums mb-1 w-full whitespace-nowrap">
+            יעד {formatCurrencyCompact(day.dailyTarget)}
           </div>
         )}
 
@@ -75,14 +75,14 @@ export function DayCell({ day, month, onDayTypeChange, onIncomeChange, onNoteCha
         {day.dayType !== 'closed' && (
           <div
             className={`
-              w-full h-6 text-[11px] px-1.5 rounded tabular-nums flex items-center justify-center
+              w-full h-6 text-[11px] px-1.5 rounded tabular-nums flex items-center justify-center whitespace-nowrap
               ${day.actualIncome > 0
                 ? 'bg-teal/[0.07] text-teal font-semibold'
                 : 'bg-sand-light/60 text-warm-gray border border-dashed border-sand-dark/30'
               }
             `}
           >
-            {day.actualIncome > 0 ? formatNumber(day.actualIncome) : '+ ₪'}
+            {day.actualIncome > 0 ? formatCurrencyCompact(day.actualIncome) : '+ ₪'}
           </div>
         )}
 

@@ -47,29 +47,30 @@ export function QuarterSummary({ metrics, quarter, year }: QuarterSummaryProps) 
       </div>
 
       {/* Bottom: Stats in a clear row */}
-      <div className="grid grid-cols-3 gap-6 border-t border-cream/20 pt-5">
-        <div className="text-center">
-          <p className="text-sm text-gold-light font-semibold mb-2">יעד רבעוני</p>
-          <p className="text-2xl font-extrabold tabular-nums text-white">
-            {hasTarget ? formatCurrency(metrics.totalTarget) : '—'}
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 border-t border-cream/20 pt-5">
+        <div className="text-center min-w-0">
+          <p className="text-xs sm:text-sm text-gold-light font-semibold mb-2">יעד רבעוני</p>
+          <p className="text-xl sm:text-2xl font-extrabold tabular-nums text-white" title={hasTarget ? formatCurrency(metrics.totalTarget) : ''}>
+            {hasTarget ? formatCurrencyCompact(metrics.totalTarget) : '—'}
           </p>
         </div>
-        <div className="text-center">
-          <p className="text-sm text-gold-light font-semibold mb-2">הכנסה מצטברת</p>
-          <p className="text-2xl font-extrabold tabular-nums text-white">
-            {metrics.totalIncome > 0 ? formatCurrency(metrics.totalIncome) : '—'}
+        <div className="text-center min-w-0">
+          <p className="text-xs sm:text-sm text-gold-light font-semibold mb-2">הכנסה מצטברת</p>
+          <p className="text-xl sm:text-2xl font-extrabold tabular-nums text-white" title={metrics.totalIncome > 0 ? formatCurrency(metrics.totalIncome) : ''}>
+            {metrics.totalIncome > 0 ? formatCurrencyCompact(metrics.totalIncome) : '—'}
           </p>
         </div>
-        <div className="text-center">
-          <p className="text-sm text-gold-light font-semibold mb-2">פער</p>
+        <div className="text-center min-w-0">
+          <p className="text-xs sm:text-sm text-gold-light font-semibold mb-2">פער</p>
           <p
-            className={`text-2xl font-extrabold tabular-nums ${
+            className={`text-xl sm:text-2xl font-extrabold tabular-nums ${
               hasTarget && metrics.totalIncome > 0
                 ? (gap >= 0 ? 'text-gold' : 'text-terracotta-light')
                 : 'text-cream/40'
             }`}
+            title={hasTarget && metrics.totalIncome > 0 ? formatCurrency(gap) : ''}
           >
-            {hasTarget && metrics.totalIncome > 0 ? formatCurrency(gap) : '—'}
+            {hasTarget && metrics.totalIncome > 0 ? formatCurrencyCompact(gap) : '—'}
           </p>
         </div>
       </div>
@@ -80,8 +81,8 @@ export function QuarterSummary({ metrics, quarter, year }: QuarterSummaryProps) 
             <span className={`w-2.5 h-2.5 rounded-full ${paceColors.dot}`} aria-hidden="true" />
             <div>
               <p className="text-sm text-gold-light font-semibold">עמידה עד כה</p>
-              <p className="text-xs text-cream/70 tabular-nums" dir="ltr">
-                {formatCurrency(metrics.incomeToDate)} / {formatCurrency(metrics.targetToDate)}
+              <p className="text-xs text-cream/70 tabular-nums" dir="ltr" title={`${formatCurrency(metrics.incomeToDate)} / ${formatCurrency(metrics.targetToDate)}`}>
+                {formatCurrencyCompact(metrics.incomeToDate)} / {formatCurrencyCompact(metrics.targetToDate)}
               </p>
             </div>
           </div>
