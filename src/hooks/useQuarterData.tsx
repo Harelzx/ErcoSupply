@@ -12,9 +12,12 @@ export interface SaveErrorInfo {
   code?: string;
   details?: string;
   hint?: string;
+  operation?: string;
+  timestamp: string;
 }
 
-function describeError(err: unknown): SaveErrorInfo {
+function describeError(err: unknown, operation: string): SaveErrorInfo {
+  const timestamp = new Date().toISOString();
   if (err && typeof err === 'object') {
     const e = err as { name?: string; message?: string; code?: string; details?: string; hint?: string };
     return {
@@ -23,9 +26,11 @@ function describeError(err: unknown): SaveErrorInfo {
       code: e.code,
       details: e.details,
       hint: e.hint,
+      operation,
+      timestamp,
     };
   }
-  return { type: 'Error', message: String(err) };
+  return { type: 'Error', message: String(err), operation, timestamp };
 }
 
 function getCurrentQuarter(): { quarter: 1 | 2 | 3 | 4; year: number } {
@@ -119,6 +124,7 @@ interface QuarterContextValue {
   loading: boolean;
   saving: boolean;
   saveError: SaveErrorInfo | null;
+  lastSavedAt: Date | null;
   setQuarter: (quarter: 1 | 2 | 3 | 4, year: number) => void;
   setMonthlyTarget: (monthIndex: number, target: number) => void;
   setDayType: (date: string, dayType: DayType) => void;
@@ -133,6 +139,7 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<SaveErrorInfo | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const configIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveGenerationRef = useRef(0);
@@ -219,6 +226,7 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
       const isStale = () => saveGenerationRef.current !== generation;
 
       setSaving(true);
+      let operation = 'saveQuarterConfig';
       try {
         const targets: [number, number, number] = [
           state.months[0].monthlyTarget,
@@ -231,15 +239,17 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
 
         if (id) {
           configIdRef.current = id;
+          operation = 'saveDayOverrides';
           const allDays = state.months.flatMap(m => m.days);
           await saveDayOverrides(id, allDays);
           if (isStale()) return;
         }
 
         setSaveError(null);
+        setLastSavedAt(new Date());
       } catch (err) {
         if (isStale()) return;
-        const info = describeError(err);
+        const info = describeError(err, operation);
         console.error(`Save failed [${info.type}]:`, info);
         setSaveError(info);
       } finally {
@@ -281,12 +291,13 @@ export function QuarterProvider({ children }: { children: ReactNode }) {
     loading,
     saving,
     saveError,
+    lastSavedAt,
     setQuarter,
     setMonthlyTarget,
     setDayType,
     setActualIncome,
     setNote,
-  }), [state, metrics, loading, saving, saveError, setQuarter, setMonthlyTarget, setDayType, setActualIncome, setNote]);
+  }), [state, metrics, loading, saving, saveError, lastSavedAt, setQuarter, setMonthlyTarget, setDayType, setActualIncome, setNote]);
 
   return (
     <QuarterContext.Provider value={value}>

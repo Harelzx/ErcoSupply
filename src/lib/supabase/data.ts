@@ -82,21 +82,35 @@ export async function saveDayOverrides(
   if (!user) throw new Error('Not authenticated');
   if (!configId) throw new Error('Missing quarter config id');
 
-  const modifiedDays = days.filter(d => d.actualIncome > 0 || d.note);
-  if (modifiedDays.length === 0) return;
+  // A day needs a DB row only when it carries non-default state.
+  // Empty rows are deleted so clearing income (entering 0) actually persists.
+  const rowsToKeep = days.filter(d => d.actualIncome > 0 || d.note.length > 0);
 
-  const rows = modifiedDays.map(d => ({
-    user_id: user.id,
-    quarter_config_id: configId,
-    date: d.date,
-    day_type: d.dayType,
-    actual_income: d.actualIncome,
-    note: d.note,
-    updated_at: new Date().toISOString(),
-  }));
+  if (rowsToKeep.length > 0) {
+    const rows = rowsToKeep.map(d => ({
+      user_id: user.id,
+      quarter_config_id: configId,
+      date: d.date,
+      day_type: d.dayType,
+      actual_income: d.actualIncome,
+      note: d.note,
+      updated_at: new Date().toISOString(),
+    }));
 
-  const { error } = await sb.from('day_overrides')
-    .upsert(rows, { onConflict: 'quarter_config_id,date' });
+    const { error } = await sb.from('day_overrides')
+      .upsert(rows, { onConflict: 'quarter_config_id,date' });
 
-  if (error) throw error;
+    if (error) throw error;
+  }
+
+  // Reconcile: delete any previously-saved rows in this quarter that are
+  // no longer kept. Without this, setting income back to 0 leaves the old
+  // value in the DB and it reappears on refresh.
+  const keepDates = rowsToKeep.map(d => d.date);
+  const delBase = sb.from('day_overrides').delete().eq('quarter_config_id', configId);
+  const delQuery = keepDates.length > 0
+    ? delBase.not('date', 'in', `(${keepDates.map(d => `"${d}"`).join(',')})`)
+    : delBase;
+  const { error: delError } = await delQuery;
+  if (delError) throw delError;
 }
