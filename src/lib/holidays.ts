@@ -1,4 +1,4 @@
-import { HebrewCalendar, HDate, flags } from '@hebcal/core';
+import { HebrewCalendar, flags } from '@hebcal/core';
 import { DayType } from './types';
 
 export interface HolidayInfo {

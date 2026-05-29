@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { DayRecord, DayType, MonthData } from '@/lib/types';
 import { DAY_TYPE_CONFIG, DAY_TYPE_CYCLE } from '@/lib/constants';
 import { formatNumber, formatDate, formatCurrencyCompact } from '@/lib/format';
