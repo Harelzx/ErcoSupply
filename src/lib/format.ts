@@ -1,10 +1,17 @@
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('he-IL', {
-    style: 'currency',
-    currency: 'ILS',
+  // Build the string manually instead of using Intl's `style: 'currency'`,
+  // which injects U+200F RTL marks around the ₪ (e.g. "‏948,851 ‏₪"). Those
+  // marks reorder the symbol when the string is rendered inside a dir="ltr"
+  // box (the reveal bubble, compact cells), making ₪ overlap the digits.
+  // A grouped number + non-breaking space + ₪ stays clean and LTR-safe.
+  const NBSP = ' ';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  const num = new Intl.NumberFormat('he-IL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(abs);
+  return `${sign}${num}${NBSP}₪`;
 }
 
 export function formatCurrencyCompact(value: number): string {

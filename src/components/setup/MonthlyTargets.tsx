@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useQuarterData } from '@/hooks/useQuarterData';
-import { formatCurrency } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function MonthlyTargets() {
@@ -13,8 +12,8 @@ export function MonthlyTargets() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[0, 1, 2].map(i => (
           <div key={i} className="bg-white rounded-xl p-4 shadow-warm border border-sand-dark/50">
-            <Skeleton className="h-3 w-16 mb-2" />
-            <Skeleton className="h-11 w-full rounded-lg" />
+            <Skeleton className="h-4 w-16 mb-2" />
+            <Skeleton className="h-12 w-full rounded-lg" />
           </div>
         ))}
       </div>
@@ -65,13 +64,18 @@ function TargetInput({
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-warm border border-sand-dark/50 transition-all hover:shadow-warm-md">
-      <label className="block text-xs font-semibold text-warm-gray mb-2 tracking-wide">
+      <label className="block text-sm font-semibold text-warm-gray mb-2 tracking-wide">
         יעד {label}
       </label>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-warm-gray font-medium">
-          ₪
-        </span>
+      {/* ₪ is a flex sibling (not an absolute overlay) so it can never overlap
+          the number — iOS Safari ignores an input's padding. The number is
+          right-aligned with ₪ to its right, matching the value displays. The
+          inter-gap lives on the ₪ span's padding (reliable) rather than the
+          input's (which iOS may drop). */}
+      <div
+        dir="ltr"
+        className="flex items-center h-12 bg-sand-light/50 border border-sand-dark/30 rounded-lg overflow-hidden transition-colors focus-within:ring-2 focus-within:ring-gold/50 focus-within:border-gold"
+      >
         <input
           type="text"
           inputMode="numeric"
@@ -83,9 +87,10 @@ function TargetInput({
           }}
           onBlur={handleBlur}
           placeholder="0"
-          className="w-full h-11 pl-8 pr-3 text-left text-lg font-bold text-teal bg-sand-light/50 border border-sand-dark/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold tabular-nums transition-colors"
+          className="flex-1 min-w-0 h-full bg-transparent pl-3 text-right text-xl font-bold text-teal tabular-nums outline-none"
           dir="ltr"
         />
+        <span className="shrink-0 pl-2 pr-3 text-base text-warm-gray font-medium select-none">₪</span>
       </div>
     </div>
   );
