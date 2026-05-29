@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { QuarterState } from './types';
-import { COLUMN_HEADERS, HEBREW_DAY_NAMES, DAY_TYPE_CONFIG, QUARTER_LABELS } from './constants';
+import { COLUMN_HEADERS, DAY_TYPE_CONFIG, QUARTER_LABELS } from './constants';
 import { computeCumulativeRow, computeUpdatedDailyTarget } from './calculator';
 import { getReferenceDateISO } from './date';
 import { formatDate } from './format';
