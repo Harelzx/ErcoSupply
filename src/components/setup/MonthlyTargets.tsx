@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuarterData } from '@/hooks/useQuarterData';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -43,14 +43,12 @@ function TargetInput({
   value: number;
   onChange: (val: number) => void;
 }) {
+  // `inputValue` is only the editing buffer used while focused; onFocus seeds
+  // it from the current `value`, and the blurred display reads `value` directly
+  // (see the input below). So no effect is needed to sync it — syncing it while
+  // blurred wrote state nothing reads and caused cascading renders.
   const [inputValue, setInputValue] = useState(value > 0 ? String(value) : '');
   const [isFocused, setIsFocused] = useState(false);
-
-  useEffect(() => {
-    if (!isFocused) {
-      setInputValue(value > 0 ? String(value) : '');
-    }
-  }, [value, isFocused]);
 
   const handleBlur = () => {
     setIsFocused(false);
